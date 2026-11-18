@@ -860,14 +860,27 @@ async function askAI() {
       body:JSON.stringify({입력:prompt, 언어:language, 이미지:images})
     });
 
-    if(!response.ok) throw new Error("HTTP "+response.status);
+    const rawResponse = await response.text();
+    let data;
+    try { data = JSON.parse(rawResponse); }
+    catch {
+      throw new Error("API 返回的不是 JSON（HTTP " + response.status + "）：" + rawResponse.slice(0, 300));
+    }
 
-    const data=await response.json();
-    const content=data.内容 || t().failed;
-    showResult(data.状态 || "답",content);
+    if(!response.ok) {
+      showResult("오류", data.내용 || data.content || ("API 请求失败，HTTP " + response.status + "。返回：" + rawResponse.slice(0, 500)));
+      return;
+    }
+
+    const content = data.내용 || data.content || data.answer || data.response;
+    if(typeof content !== "string" || !content.trim()) {
+      showResult("오류","后台已返回数据，但没有找到有效的回答文本。HTTP " + response.status + "。实际返回：" + JSON.stringify(data).slice(0, 800));
+      return;
+    }
+    showResult(data.상태 || data.status || "답",content);
 
   } catch(error) {
-    showResult("오류",t().error);
+    showResult("오류","请求失败：" + (error && error.message ? error.message : String(error)));
   } finally {
     button.disabled=false;
   }
