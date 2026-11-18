@@ -133,9 +133,10 @@ ${언어지시}
       내용,
     });
   } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
     return Response.json({
       상태: "오류",
-      내용: "AI 분석 요청에 실패했습니다. Cloudflare의 Workers AI 바인딩, 모델 사용 한도 및 모델 이름을 확인해 주세요."
+      내용: "AI 분석 요청에 실패했습니다. 실제 오류: " + detail.slice(0, 500)
     }, { status: 503 });
   }
 }
