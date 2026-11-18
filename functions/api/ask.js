@@ -50,7 +50,8 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ 상태: "오류", 내용: "요청 내용을 읽지 못했습니다. 다시 시도해 주세요." }, { status: 400 });
   }
 
-  const 입력 = typeof body?.입력 === "string" ? body.입력.trim() : "";
+  const rawInput = typeof body?.입력 === "string" ? body.입력 : (typeof body?.输入 === "string" ? body.输入 : "");
+  const 입력 = rawInput.trim();
   const 언어 = body?.언어 === "ko" ? "ko" : "zh";
   const 이미지 = Array.isArray(body?.이미지) ? body.이미지.slice(0, 3) : [];
 
