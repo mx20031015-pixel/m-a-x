@@ -626,7 +626,7 @@ function updateLanguage(lang) {
   $("inputTitle").textContent = x.inputTitle;
   $("inputHint").textContent = x.hint;
   $("q").placeholder = x.placeholder;
-  $("exampleLabel").textContent = x.examples;
+  $("exampleLabel").textContent = language === "zh" ? "试试这些：" : "예시:";
   document.querySelector('[data-example="student"]').textContent = x.e1;
   document.querySelector('[data-example="research"]').textContent = x.e2;
   document.querySelector('[data-example="record"]').textContent = x.e3;
@@ -857,7 +857,7 @@ async function askAI() {
     const response=await fetch("/api/ask",{
       method:"POST",
       headers:{"content-type":"application/json"},
-      body:JSON.stringify({输入:prompt, 이미지:images})
+      body:JSON.stringify({입력:prompt, 언어:language, 이미지:images})
     });
 
     if(!response.ok) throw new Error("HTTP "+response.status);
