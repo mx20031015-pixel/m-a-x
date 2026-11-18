@@ -483,7 +483,7 @@ textarea::placeholder { color:#59647b; }
 
     <div class="input-head">
       <label id="inputTitle" for="q">请输入采访主题或相关内容</label>
-      <span class="hint" id="inputHint">支持中文和韩文</span>
+      <span class="hint" id="inputHint">支持中文和韩文 · Enter 发送，Shift+Enter 换行</span>
     </div>
 
     <textarea id="q"
@@ -571,7 +571,7 @@ const translations = {
     m3:"内容分析",d3:"分析观点、关键词与差异",
     m4:"报告生成",d4:"生成结构化采访报告",
     inputTitle:"请输入采访主题或相关内容",
-    hint:"支持中文和韩文",
+    hint:"支持中文和韩文 · Enter 发送，Shift+Enter 换行",
     placeholder:"请描述你的采访主题、目标、采访对象或已有的采访记录……",
     examples:"试试这些：",
     e1:"学生采访",e2:"研究调查",e3:"整理记录",
@@ -634,7 +634,7 @@ const translations = {
     m3:"내용 분석",d3:"의견, 키워드 및 차이점 분석",
     m4:"보고서 작성",d4:"구조화된 인터뷰 보고서 생성",
     inputTitle:"인터뷰 주제 또는 관련 내용을 입력하세요",
-    hint:"중국어와 한국어 지원",
+    hint:"중국어와 한국어 지원 · Enter 전송, Shift+Enter 줄바꿈",
     placeholder:"인터뷰 주제, 목적, 대상 또는 기존 인터뷰 기록을 입력하세요...",
     examples:"예시:",
     e1:"학생 인터뷰",e2:"연구 조사",e3:"기록 정리",
@@ -1042,6 +1042,8 @@ function showResult(type,content) {
 }
 
 async function askAI() {
+  const button=$("go");
+  if(button.disabled) return;
   const input=$("q").value.trim();
   if(!input && !selectedFiles.length) {
     alert(t().empty);
@@ -1053,7 +1055,6 @@ async function askAI() {
     return;
   }
 
-  const button=$("go");
   button.disabled=true;
   $("out").classList.add("show");
   $("outputTitle").textContent=t().output;
@@ -1118,7 +1119,10 @@ async function askAI() {
 $("go").addEventListener("click",askAI);
 
 $("q").addEventListener("keydown",e=>{
-  if((e.ctrlKey || e.metaKey) && e.key==="Enter") askAI();
+  if(e.key==="Enter" && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    askAI();
+  }
 });
 
 $("copy").addEventListener("click",async()=>{
