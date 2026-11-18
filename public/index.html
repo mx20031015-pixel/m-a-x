@@ -1,110 +1,705 @@
+
 <!doctype html>
-<html lang="ko">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>남을 위한 AI</title>
+<meta name="theme-color" content="#090b12">
+<title>AI Interview Assistant</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+
 <style>
-  :root{
-    --bg:#0B0B0C; --fg:#fff; --dim:#8A8D93; --blue:#1A46F0;
-    --line:#2A2C30; --panel:#16171A;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0; background:var(--bg); color:var(--fg);
-    font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
-  .wrap{max-width:720px; margin:0 auto; padding:72px 20px 96px}
-  h1{font-size:44px; line-height:1.18; letter-spacing:-1.4px; font-weight:800; margin:0 0 14px}
-  .desc{color:var(--dim); font-size:17px; line-height:1.65; margin:0 0 40px}
-  label{display:block; font-size:13px; font-weight:700; letter-spacing:2px; color:#5E6066; margin-bottom:10px}
-  textarea{
-    width:100%; min-height:130px; resize:vertical; padding:16px;
-    background:var(--panel); color:var(--fg); border:1px solid var(--line);
-    border-radius:6px; font:inherit; font-size:16px; line-height:1.6;
-  }
-  textarea:focus{outline:none; border-color:var(--blue)}
-  button{
-    margin-top:14px; padding:14px 28px; border:0; border-radius:6px;
-    background:var(--blue); color:#fff; font:inherit; font-size:16px; font-weight:700;
-    cursor:pointer;
-  }
-  button:disabled{opacity:.45; cursor:default}
-  #out{margin-top:40px}
-  .card{border-top:3px solid var(--line); padding-top:22px}
-  .card .tag{font-size:13px; font-weight:700; letter-spacing:2px; color:var(--dim); margin-bottom:12px}
-  .card .body{font-size:18px; line-height:1.75; white-space:pre-wrap}
-  .ask{border-top-color:var(--blue)}
-  .ask .tag{color:var(--blue)}
-  .err{border-top-color:#8A8D93}
-  .foot{margin-top:72px; padding-top:20px; border-top:1px solid var(--line);
-        color:#5E6066; font-size:13px; line-height:1.8}
-  @media (max-width:520px){ h1{font-size:34px} .wrap{padding:48px 18px 72px} }
+:root {
+  --bg:#090b12;
+  --panel:#111522;
+  --panel2:#171d2c;
+  --line:#252d40;
+  --text:#f4f6ff;
+  --muted:#8993aa;
+  --blue:#5378ff;
+  --blue2:#3158ec;
+  --green:#43d6a0;
+  --radius:16px;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:
+    radial-gradient(ellipse at 50% -20%,#1c2b50 0%,transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,textarea { font:inherit; }
+button { cursor:pointer; }
+button:disabled { opacity:.5;cursor:not-allowed; }
+
+.topbar {
+  height:76px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 max(calc((100% - 1120px)/2),24px);
+  background:rgba(9,11,18,.8);
+  backdrop-filter:blur(16px);
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:17px;
+  font-weight:800;
+}
+.logo {
+  width:38px;height:38px;
+  border-radius:12px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,#6689ff,#3654df);
+  font-size:19px;
+}
+.brand small {
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:1.5px;
+  margin-top:3px;
+}
+.lang {
+  display:flex;
+  gap:6px;
+  padding:5px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--panel);
+}
+.lang button {
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  padding:8px 13px;
+  border-radius:8px;
+  font-size:13px;
+}
+.lang button.active {
+  color:white;
+  background:var(--blue2);
+}
+
+.container {
+  max-width:1000px;
+  margin:auto;
+  padding:70px 24px 100px;
+}
+.hero { margin-bottom:38px; }
+.eyebrow {
+  color:#8da6ff;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:2px;
+  margin-bottom:18px;
+}
+h1 {
+  font-size:46px;
+  letter-spacing:-1.8px;
+  line-height:1.2;
+  margin:0 0 16px;
+  font-weight:800;
+}
+.hero p {
+  color:var(--muted);
+  font-size:16px;
+  line-height:1.8;
+  margin:0;
+  max-width:650px;
+}
+.status {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-top:22px;
+  padding:8px 12px;
+  border:1px solid var(--line);
+  background:rgba(17,21,34,.7);
+  border-radius:30px;
+  color:#b9c4d9;
+  font-size:12px;
+}
+.dot {
+  width:7px;height:7px;
+  border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 10px var(--green);
+}
+
+.workspace {
+  border:1px solid var(--line);
+  border-radius:20px;
+  background:rgba(17,21,34,.94);
+  padding:28px;
+  box-shadow:0 24px 80px rgba(0,0,0,.25);
+}
+.section-title {
+  font-size:16px;
+  font-weight:750;
+  margin-bottom:7px;
+}
+.section-desc {
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.7;
+  margin-bottom:20px;
+}
+.modes {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:32px;
+}
+.mode {
+  min-height:125px;
+  padding:17px 14px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:#131827;
+  color:var(--text);
+  text-align:left;
+  transition:.2s;
+}
+.mode:hover {
+  border-color:#607dff;
+  transform:translateY(-2px);
+}
+.mode.active {
+  background:linear-gradient(145deg,#1a2850,#151d35);
+  border-color:var(--blue);
+  box-shadow:0 0 0 1px rgba(83,120,255,.15);
+}
+.mode .emoji {
+  font-size:22px;
+  display:block;
+  margin-bottom:12px;
+}
+.mode strong {
+  display:block;
+  font-size:14px;
+  margin-bottom:6px;
+}
+.mode small {
+  display:block;
+  font-size:11px;
+  line-height:1.5;
+  color:var(--muted);
+}
+
+.input-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:11px;
+}
+.input-head label {
+  font-size:14px;
+  font-weight:700;
+}
+.hint {
+  color:var(--muted);
+  font-size:11px;
+}
+textarea {
+  width:100%;
+  min-height:210px;
+  resize:vertical;
+  padding:19px;
+  background:#0c101b;
+  border:1px solid var(--line);
+  border-radius:12px;
+  color:var(--text);
+  font-size:14px;
+  line-height:1.9;
+  outline:none;
+  transition:.2s;
+}
+textarea:focus {
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(83,120,255,.1);
+}
+textarea::placeholder { color:#59647b; }
+
+.examples {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-top:13px;
+}
+.examples span {
+  color:var(--muted);
+  font-size:12px;
+}
+.example {
+  background:#192136;
+  border:1px solid var(--line);
+  color:#bdcaff;
+  padding:7px 11px;
+  border-radius:8px;
+  font-size:11px;
+}
+.example:hover { border-color:var(--blue); }
+
+.actions {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:25px;
+}
+.left-actions {
+  display:flex;
+  gap:9px;
+}
+.secondary {
+  background:transparent;
+  color:#aab5cb;
+  border:1px solid var(--line);
+  padding:13px 17px;
+  border-radius:10px;
+  font-size:13px;
+}
+.secondary:hover { border-color:#697da9;color:white; }
+.primary {
+  background:linear-gradient(135deg,#6284ff,#3659e8);
+  color:white;
+  border:0;
+  padding:14px 27px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:750;
+  box-shadow:0 7px 22px rgba(56,88,230,.22);
+}
+.primary:hover { filter:brightness(1.12); }
+
+.output {
+  margin-top:30px;
+  display:none;
+  border:1px solid var(--line);
+  border-radius:15px;
+  background:#0d1220;
+  overflow:hidden;
+}
+.output.show { display:block; }
+.output-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 19px;
+  border-bottom:1px solid var(--line);
+}
+.output-title {
+  font-size:14px;
+  font-weight:750;
+}
+.output-content {
+  padding:22px;
+  font-size:14px;
+  line-height:1.95;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  color:#dce3f4;
+}
+.output-content.loading { color:#8da6ff; }
+.output-tools { display:flex;gap:7px; }
+.output-tools button {
+  padding:7px 10px;
+  background:#192136;
+  color:#bdcaff;
+  border:1px solid var(--line);
+  border-radius:7px;
+  font-size:11px;
+}
+.error { color:#ff9a9a; }
+
+.footer {
+  margin-top:45px;
+  padding-top:22px;
+  border-top:1px solid var(--line);
+  color:#657087;
+  font-size:12px;
+  line-height:1.9;
+  text-align:center;
+}
+.footer strong { color:#8995ad; }
+
+@media(max-width:700px) {
+  .container { padding:48px 16px 70px; }
+  .topbar { padding:0 16px;height:65px; }
+  h1 { font-size:34px; }
+  .hero p { font-size:14px; }
+  .workspace { padding:18px; }
+  .modes { grid-template-columns:repeat(2,1fr);gap:9px; }
+  .mode { min-height:115px;padding:13px; }
+  .actions { align-items:stretch;flex-direction:column-reverse; }
+  .left-actions { display:grid;grid-template-columns:1fr 1fr; }
+  .primary { width:100%; }
+  .hint { display:none; }
+}
+@media(max-width:380px) {
+  .brand { font-size:14px; }
+  .lang button { padding:7px 9px;font-size:11px; }
+}
 </style>
 </head>
+
 <body>
-<div class="wrap">
-  <h1 id="title">준비 중</h1>
-  <p class="desc" id="desc"></p>
 
-  <label for="q">무엇이 필요한가요</label>
-  <textarea id="q" placeholder=""></textarea>
-  <button id="go">물어보기</button>
-
-  <div id="out"></div>
-
-  <div class="foot">
-    입력한 내용은 저장하지 않습니다. 답변을 만드는 데에만 쓰이고 바로 사라집니다.<br>
-    사람 이름, 연락처, 학번 같은 것은 적지 마세요.
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">✦</div>
+    <div>
+      AI Interview Assistant
+      <small>PROFESSIONAL EDITION</small>
+    </div>
   </div>
-</div>
+
+  <div class="lang">
+    <button id="zh" class="active" type="button">中文</button>
+    <button id="ko" type="button">한국어</button>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <div class="eyebrow">INTELLIGENT INTERVIEW WORKSPACE</div>
+    <h1 id="heroTitle">让每一次采访<br>都更有价值。</h1>
+    <p id="heroDesc">
+      从采访准备、问题设计，到真实记录整理、深度分析与报告生成，
+      用 AI 帮助你完成完整的采访工作流程。
+    </p>
+    <div class="status">
+      <span class="dot"></span>
+      <span id="onlineText">AI 助手已准备就绪</span>
+    </div>
+  </section>
+
+  <section class="workspace">
+
+    <div class="section-title" id="modeTitle">选择工作模式</div>
+    <div class="section-desc" id="modeDesc">
+      根据你目前的任务，选择合适的采访工具。
+    </div>
+
+    <div class="modes">
+
+      <button class="mode active" data-mode="plan" type="button">
+        <span class="emoji">✦</span>
+        <strong data-i18n="m1">采访准备</strong>
+        <small data-i18n="d1">制定采访计划，生成专业问题</small>
+      </button>
+
+      <button class="mode" data-mode="organize" type="button">
+        <span class="emoji">▤</span>
+        <strong data-i18n="m2">记录整理</strong>
+        <small data-i18n="d2">整理访谈记录，提取核心内容</small>
+      </button>
+
+      <button class="mode" data-mode="analyze" type="button">
+        <span class="emoji">◈</span>
+        <strong data-i18n="m3">内容分析</strong>
+        <small data-i18n="d3">分析观点、关键词与差异</small>
+      </button>
+
+      <button class="mode" data-mode="report" type="button">
+        <span class="emoji">▧</span>
+        <strong data-i18n="m4">报告生成</strong>
+        <small data-i18n="d4">生成结构化采访报告</small>
+      </button>
+
+    </div>
+
+    <div class="input-head">
+      <label id="inputTitle" for="q">请输入采访主题或相关内容</label>
+      <span class="hint" id="inputHint">支持中文和韩文</span>
+    </div>
+
+    <textarea id="q"
+      placeholder="请描述你的采访主题、目标、采访对象或已有的采访记录……"
+      spellcheck="false"></textarea>
+
+    <div class="examples">
+      <span id="exampleLabel">试试这些：</span>
+      <button class="example" type="button" data-example="student">学生采访</button>
+      <button class="example" type="button" data-example="research">研究调查</button>
+      <button class="example" type="button" data-example="record">整理记录</button>
+    </div>
+
+    <div class="actions">
+      <div class="left-actions">
+        <button class="secondary" id="clear" type="button">清空内容</button>
+        <button class="secondary" id="reset" type="button">重置模式</button>
+      </div>
+      <button class="primary" id="go" type="button">
+        ✦ 开始采访分析
+      </button>
+    </div>
+
+    <section class="output" id="out" aria-live="polite">
+      <div class="output-head">
+        <div class="output-title" id="outputTitle">AI 分析结果</div>
+        <div class="output-tools">
+          <button id="copy" type="button">复制结果</button>
+        </div>
+      </div>
+      <div class="output-content" id="result"></div>
+    </section>
+
+  </section>
+
+  <footer class="footer">
+    <strong id="footerTitle">AI Interview Assistant · Professional</strong>
+    <br>
+    <span id="footerText">
+      请勿输入身份证号码、联系方式等个人敏感信息。
+      AI 生成内容应结合真实采访资料进行核查。
+    </span>
+  </footer>
+
+</main>
 
 <script>
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
-fetch("/api/meta").then(r => r.json()).then(m => {
-  $("title").textContent = m.제목 || "남을 위한 AI";
-  $("desc").textContent = m.설명 || "";
-  $("q").placeholder = m.입력안내 || "";
-  $("go").textContent = m.버튼 || "물어보기";
-  document.title = m.제목 || document.title;
-}).catch(() => {});
+let language = "zh";
+let currentMode = "plan";
+let lastResult = "";
 
-function 보여주기(상태, 내용) {
-  const cls = 상태 === "물음" ? "card ask" : (상태 === "오류" ? "card err" : "card");
-  const tag = 상태 === "물음" ? "먼저 확인할 것" : (상태 === "오류" ? "실패" : "답");
-  $("out").innerHTML =
-    '<div class="' + cls + '"><div class="tag">' + tag + '</div>' +
-    '<div class="body"></div></div>';
-  $("out").querySelector(".body").textContent = 내용;
+const translations = {
+  zh: {
+    title:"让每一次采访<br>都更有价值。",
+    desc:"从采访准备、问题设计，到真实记录整理、深度分析与报告生成，用 AI 帮助你完成完整的采访工作流程。",
+    online:"AI 助手已准备就绪",
+    modeTitle:"选择工作模式",
+    modeDesc:"根据你目前的任务，选择合适的采访工具。",
+    m1:"采访准备",d1:"制定采访计划，生成专业问题",
+    m2:"记录整理",d2:"整理访谈记录，提取核心内容",
+    m3:"内容分析",d3:"分析观点、关键词与差异",
+    m4:"报告生成",d4:"生成结构化采访报告",
+    inputTitle:"请输入采访主题或相关内容",
+    hint:"支持中文和韩文",
+    placeholder:"请描述你的采访主题、目标、采访对象或已有的采访记录……",
+    examples:"试试这些：",
+    e1:"学生采访",e2:"研究调查",e3:"整理记录",
+    clear:"清空内容",reset:"重置模式",go:"✦ 开始采访分析",
+    output:"AI 分析结果",copy:"复制结果",copied:"已复制",
+    footer:"请勿输入身份证号码、联系方式等个人敏感信息。AI 生成内容应结合真实采访资料进行核查。",
+    empty:"请先输入采访主题或内容。",
+    loading:"AI 正在分析，请稍候……",
+    error:"连接失败，请检查网络或稍后重试。",
+    failed:"未能获得有效回答，请稍后重试。",
+    ask:"需要进一步确认",
+    answer:"分析结果",
+    fail:"处理失败",
+    mode:{
+      plan:"请根据以下内容制定一份专业采访计划。明确采访主题、目的、对象、方法，并设计有逻辑顺序的开放式问题。避免诱导性问题。信息不足时先提出必要的澄清问题。",
+      organize:"请整理以下真实采访记录。按照主题分类，提取核心回答、重要观点和关键词。保留受访者原意，明确区分原始回答和 AI 总结。不得编造记录中不存在的信息。",
+      analyze:"请分析以下采访资料。提取主要观点、重复出现的意见、关键词、共性与差异。使用客观中立的语言，并通过实际采访内容支持分析。不得虚构事实。",
+      report:"请根据以下真实采访资料生成一份结构化报告。包括采访背景、目的、对象、主要问题、核心回答、结果分析和结论。明确区分事实与分析，不得编造采访内容。"
+    },
+    examples:{
+      student:"采访主题：在韩国留学的中国大学生学习与生活情况。采访对象：中国留学生。采访目的：了解他们的学习体验、文化适应、生活挑战和未来规划。",
+      research:"研究主题：大学生使用人工智能工具的情况。研究目的：了解 AI 对学习效率、学习习惯和独立思考能力的影响。",
+      record:"请整理以下采访记录：受访者表示，刚到韩国时最大的困难是语言沟通。课堂上有时无法完全理解教授的内容，课外则需要花费更多时间适应韩国生活。"
+    }
+  },
+  ko: {
+    title:"모든 인터뷰를<br>더 가치 있게.",
+    desc:"인터뷰 준비와 질문 설계부터 실제 기록 정리, 심층 분석 및 보고서 작성까지 AI가 전체 인터뷰 과정을 도와드립니다.",
+    online:"AI 도우미가 준비되었습니다",
+    modeTitle:"작업 모드 선택",
+    modeDesc:"현재 진행 중인 작업에 맞는 인터뷰 도구를 선택하세요.",
+    m1:"인터뷰 준비",d1:"인터뷰 계획 및 전문 질문 생성",
+    m2:"기록 정리",d2:"인터뷰 기록 정리 및 핵심 내용 추출",
+    m3:"내용 분석",d3:"의견, 키워드 및 차이점 분석",
+    m4:"보고서 작성",d4:"구조화된 인터뷰 보고서 생성",
+    inputTitle:"인터뷰 주제 또는 관련 내용을 입력하세요",
+    hint:"중국어와 한국어 지원",
+    placeholder:"인터뷰 주제, 목적, 대상 또는 기존 인터뷰 기록을 입력하세요...",
+    examples:"예시:",
+    e1:"학생 인터뷰",e2:"연구 조사",e3:"기록 정리",
+    clear:"내용 지우기",reset:"모드 초기화",go:"✦ 인터뷰 분석 시작",
+    output:"AI 분석 결과",copy:"결과 복사",copied:"복사 완료",
+    footer:"주민등록번호, 연락처 등 개인정보를 입력하지 마세요. AI가 생성한 내용은 실제 인터뷰 자료와 대조하여 확인하세요.",
+    empty:"먼저 인터뷰 주제나 내용을 입력하세요.",
+    loading:"AI가 분석 중입니다. 잠시만 기다려 주세요...",
+    error:"연결에 실패했습니다. 네트워크를 확인하거나 다시 시도해 주세요.",
+    failed:"유효한 답변을 받지 못했습니다. 다시 시도해 주세요.",
+    ask:"추가 확인이 필요합니다",
+    answer:"분석 결과",
+    fail:"처리 실패",
+    mode:{
+      plan:"다음 내용을 바탕으로 전문적인 인터뷰 계획을 작성하세요. 인터뷰 주제, 목적, 대상, 방법을 명확히 하고 논리적인 순서의 개방형 질문을 설계하세요. 유도 질문을 피하고 정보가 부족하면 먼저 필요한 내용을 질문하세요.",
+      organize:"다음 실제 인터뷰 기록을 정리하세요. 주제별로 분류하고 핵심 답변, 주요 의견, 키워드를 추출하세요. 응답자의 원래 의도를 유지하고 실제 발언과 AI 요약을 구분하세요. 기록에 없는 내용을 만들어내지 마세요.",
+      analyze:"다음 인터뷰 자료를 분석하세요. 주요 의견, 반복되는 내용, 키워드, 공통점과 차이점을 추출하세요. 객관적이고 중립적인 표현을 사용하고 실제 인터뷰 내용을 근거로 분석하세요. 사실을 만들어내지 마세요.",
+      report:"다음 실제 인터뷰 자료를 바탕으로 구조화된 보고서를 작성하세요. 인터뷰 배경, 목적, 대상, 주요 질문, 핵심 답변, 분석 결과와 결론을 포함하세요. 사실과 분석을 구분하고 인터뷰에 없는 내용을 만들어내지 마세요."
+    },
+    examples:{
+      student:"인터뷰 주제: 한국에서 유학하는 중국 대학생의 학업 및 생활 경험. 인터뷰 대상: 중국인 유학생. 인터뷰 목적: 학업 경험, 문화 적응, 생활상의 어려움과 미래 계획을 파악하는 것.",
+      research:"연구 주제: 대학생의 인공지능 도구 사용 현황. 연구 목적: AI가 학습 효율, 학습 습관 및 독립적인 사고 능력에 미치는 영향을 파악하는 것.",
+      record:"다음 인터뷰 기록을 정리해 주세요: 응답자는 한국에 처음 왔을 때 가장 큰 어려움은 언어 소통이었다고 말했다. 수업에서 교수님의 설명을 완전히 이해하지 못할 때가 있었으며, 수업 외 시간에는 한국 생활에 적응하기 위해 더 많은 시간이 필요했다고 말했다."
+    }
+  }
+};
+
+function t(){ return translations[language]; }
+
+function updateLanguage(lang) {
+  language = lang;
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "ko";
+  $("zh").classList.toggle("active",lang === "zh");
+  $("ko").classList.toggle("active",lang === "ko");
+
+  const x = t();
+  $("heroTitle").innerHTML = x.title;
+  $("heroDesc").textContent = x.desc;
+  $("onlineText").textContent = x.online;
+  $("modeTitle").textContent = x.modeTitle;
+  $("modeDesc").textContent = x.modeDesc;
+
+  ["m1","d1","m2","d2","m3","d3","m4","d4"].forEach(id=>{
+    document.querySelector('[data-i18n="'+id+'"]').textContent = x[id];
+  });
+
+  $("inputTitle").textContent = x.inputTitle;
+  $("inputHint").textContent = x.hint;
+  $("q").placeholder = x.placeholder;
+  $("exampleLabel").textContent = x.examples;
+  document.querySelector('[data-example="student"]').textContent = x.e1;
+  document.querySelector('[data-example="research"]').textContent = x.e2;
+  document.querySelector('[data-example="record"]').textContent = x.e3;
+  $("clear").textContent = x.clear;
+  $("reset").textContent = x.reset;
+  $("go").textContent = x.go;
+  $("outputTitle").textContent = x.output;
+  $("copy").textContent = x.copy;
+  $("footerText").textContent = x.footer;
 }
 
-async function 물어보기() {
-  const 입력 = $("q").value.trim();
-  if (!입력) { $("q").focus(); return; }
-  $("go").disabled = true;
-  보여주기("답", "생각하는 중…");
+$("zh").addEventListener("click",()=>updateLanguage("zh"));
+$("ko").addEventListener("click",()=>updateLanguage("ko"));
+
+document.querySelectorAll(".mode").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    currentMode = btn.dataset.mode;
+    document.querySelectorAll(".mode").forEach(b=>
+      b.classList.toggle("active",b===btn)
+    );
+  });
+});
+
+document.querySelectorAll(".example").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    $("q").value = t().examples[btn.dataset.example];
+    $("q").focus();
+  });
+});
+
+$("clear").addEventListener("click",()=>{
+  $("q").value = "";
+  $("q").focus();
+});
+
+$("reset").addEventListener("click",()=>{
+  currentMode = "plan";
+  document.querySelectorAll(".mode").forEach(b=>
+    b.classList.toggle("active",b.dataset.mode==="plan")
+  );
+  $("q").value = "";
+  $("out").classList.remove("show");
+  lastResult = "";
+});
+
+function showResult(type,content) {
+  const x=t();
+  const box=$("out");
+  const result=$("result");
+
+  box.classList.add("show");
+  $("outputTitle").textContent =
+    type==="물음" || type==="ask" ? x.ask :
+    type==="오류" || type==="error" ? x.fail : x.answer;
+
+  result.classList.toggle("error",
+    type==="오류" || type==="error");
+  result.classList.remove("loading");
+  result.textContent=content;
+  lastResult=content;
+  $("copy").disabled=!content;
+}
+
+async function askAI() {
+  const input=$("q").value.trim();
+  if(!input) {
+    alert(t().empty);
+    $("q").focus();
+    return;
+  }
+
+  const button=$("go");
+  button.disabled=true;
+  $("out").classList.add("show");
+  $("outputTitle").textContent=t().output;
+  $("result").className="output-content loading";
+  $("result").textContent=t().loading;
+  $("copy").disabled=true;
+
+  const prompt =
+    (language==="zh"
+      ? "请使用简体中文回答。"
+      : "반드시 자연스러운 한국어로 답변하세요.") +
+    "\n\n" + t().mode[currentMode] +
+    "\n\n用户提供的内容：\n" + input;
+
   try {
-    const r = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ 입력 }),
+    const response=await fetch("/api/ask",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({输入:prompt})
     });
-    const d = await r.json();
-    보여주기(d.상태 || "답", d.내용 || "답을 받지 못했습니다.");
-  } catch {
-    보여주기("오류", "연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요.");
+
+    if(!response.ok) throw new Error("HTTP "+response.status);
+
+    const data=await response.json();
+    const content=data.内容 || t().failed;
+    showResult(data.状态 || "답",content);
+
+  } catch(error) {
+    showResult("오류",t().error);
   } finally {
-    $("go").disabled = false;
+    button.disabled=false;
   }
 }
 
-$("go").addEventListener("click", 물어보기);
-$("q").addEventListener("keydown", (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") 물어보기();
+$("go").addEventListener("click",askAI);
+
+$("q").addEventListener("keydown",e=>{
+  if((e.ctrlKey || e.metaKey) && e.key==="Enter") askAI();
 });
+
+$("copy").addEventListener("click",async()=>{
+  if(!lastResult) return;
+  try {
+    await navigator.clipboard.writeText(lastResult);
+    $("copy").textContent=t().copied;
+    setTimeout(()=>{$("copy").textContent=t().copy;},1500);
+  } catch {
+    $("copy").textContent="Copy failed";
+  }
+});
+
+updateLanguage("zh");
 </script>
+
 </body>
 </html>
