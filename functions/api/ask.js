@@ -1,156 +1,140 @@
-// 이 파일은 안 고쳐도 됩니다. 고칠 곳은 functions/_config.js 입니다.
-//
-// 하는 일: _config.js 의 설정으로 지시문을 만들어 Workers AI 에 보내고,
-//          「답」 또는 「되물음」 중 하나를 돌려줍니다.
-//
-// 저장하지 않습니다. 사용자가 보낸 글을 로그에 남기지 않습니다.
-// 이 줄을 지우려면 AGENTS.md 의 금지 항목도 같이 고치세요.
-
 import { 대상, 하는일, 기준, 멈춤, 모델 } from "../_config.js";
 
-const 지시문 = `당신은 아래 사람을 위해 일합니다.
-
-[쓰는 사람]
-${대상.trim()}
-
-[해야 할 일]
-${하는일.trim()}
-
-[잘된 것의 기준]
-${기준.map((c, i) => `${i + 1}. ${c}`).join("\n")}
-
-[멈추는 지점]
-${멈춤.trim()}
-
-멈추는 지점에 해당하면 추측해서 답하지 말고 status 를 "ask" 로 두고,
-text 에는 되물을 질문을 한 문장만 적습니다.
-답할 수 있으면 status 를 "answer" 로 두고 text 에 한국어 답변을 적습니다.
-text 는 언제나 문자열 하나입니다.`;
-
-// 모델이 스키마를 지키게 한다.
-const 스키마 = {
-  type: "object",
-  properties: {
-    status: { type: "string", enum: ["answer", "ask"] },
-    text: { type: "string" },
-  },
-  required: ["status", "text"],
-};
-
-// 무엇이 오든 사람이 읽을 문자열 하나로 만든다.
 function 글로(x) {
   if (x === null || x === undefined) return "";
   if (typeof x === "string") return x;
   if (typeof x === "number" || typeof x === "boolean") return String(x);
   if (Array.isArray(x)) return x.map(글로).filter(Boolean).join("\n");
   if (typeof x === "object") {
-    for (const k of ["text", "response", "output_text", "content", "message"]) {
-      const v = x[k];
-      if (typeof v === "string" && v.trim()) return v;
-      if (v && typeof v === "object") { const t = 글로(v); if (t) return t; }
+    for (const k of ["response", "text", "output_text", "content", "message", "result"]) {
+      if (x[k] !== undefined) {
+        const value = 글로(x[k]);
+        if (value.trim()) return value;
+      }
     }
     try { return JSON.stringify(x); } catch { return ""; }
   }
   return "";
 }
 
-function 객체로(x) {
-  if (x && typeof x === "object" && !Array.isArray(x)) return x;
-  if (typeof x === "string") {
-    const s = x.indexOf("{"), e = x.lastIndexOf("}");
-    if (s !== -1 && e > s) { try { return JSON.parse(x.slice(s, e + 1)); } catch { return null; } }
+function 모델출력(결과) {
+  // Workers AI 응답은 모델/런타임에 따라 response 또는 result 안에 들어올 수 있습니다.
+  let 현재 = 결과;
+  for (let i = 0; i < 4 && 현재 && typeof 현재 === "object"; i++) {
+    if (현재.response !== undefined) { 현재 = 현재.response; continue; }
+    if (현재.result !== undefined) { 현재 = 현재.result; continue; }
+    if (현재.output_text !== undefined) { 현재 = 현재.output_text; continue; }
+    break;
+  }
+  return 현재;
+}
+
+function 구조화(원문) {
+  if (원문 && typeof 원문 === "object" && !Array.isArray(원문)) {
+    if (typeof 원문.text === "string" || typeof 원문.status === "string") return 원문;
+  }
+  if (typeof 원문 === "string") {
+    const start = 원문.indexOf("{");
+    const end = 원문.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try { return JSON.parse(원문.slice(start, end + 1)); } catch {}
+    }
   }
   return null;
 }
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
-  const 디버그 = new URL(request.url).searchParams.get("debug") === "1";
-
-  let 입력 = "";
-  let 이미지 = [];
-  try {
-    const body = await request.json();
-    입력 = (body && typeof body.입력 === "string") ? body.입력.trim() : "";
-    이미지 = Array.isArray(body?.이미지) ? body.이미지.slice(0, 3) : [];
-  } catch { 입력 = ""; }
-
-  // 이미지 업로드는 최대 3장, 각 이미지 데이터 URL만 허용합니다.
-  이미지 = 이미지.filter((item) =>
-    item && typeof item.data === "string" &&
-    /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(item.data) &&
-    item.data.length <= 3_000_000
-  );
-
-  // 모델을 부르기 전에 거르는 1차 멈춤. 한도도 아끼고, 멈춤이 눈에 보입니다.
-  if (입력.length < 5) {
-    return Response.json({ 상태: "물음", 내용: "무엇을 도와드릴지 한 줄만 적어 주세요." });
+export async function onRequestPost({ request, env }) {
+  let body;
+  try { body = await request.json(); }
+  catch {
+    return Response.json({ 상태: "오류", 내용: "요청 내용을 읽지 못했습니다. 다시 시도해 주세요." }, { status: 400 });
   }
 
-  // 이미지는 Vision 모델로 먼저 설명한 뒤, 기존 인터뷰 모델에 설명을 전달합니다.
-  // 업로드된 파일은 저장하지 않습니다.
-  let 이미지설명 = "";
-  if (이미지.length) {
-    const 설명들 = [];
-    for (let i = 0; i < 이미지.length; i++) {
-      try {
-        const encoded = 이미지[i].data.slice(이미지[i].data.indexOf(",") + 1);
-        const binary = atob(encoded);
-        const imageBytes = Array.from(binary, (char) => char.charCodeAt(0));
-        const vision = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
-          prompt: "이미지의 내용과 읽을 수 있는 글자를 정확하게 설명하세요. 보이지 않는 정보는 추측하지 마세요. 사용자의 인터뷰 작업과 관련된 정보만 간결하게 정리하세요.",
-          image: imageBytes,
-          max_tokens: 450,
-        });
-        const 설명 = 글로(vision?.response ?? vision).trim();
-        if (설명) 설명들.push("이미지 " + (i + 1) + " (" + String(이미지[i].name || "첨부 이미지").slice(0, 100) + "):\n" + 설명);
-      } catch {
-        return Response.json(
-          { 상태: "오류", 내용: "이미지를 분석하지 못했습니다. Cloudflare에서 Llama 3.2 Vision 모델의 Meta 라이선스 동의가 필요할 수 있습니다. 이미지 크기를 줄이거나 텍스트로 내용을 입력해 주세요." },
-          { status: 503 },
-        );
-      }
-    }
-    이미지설명 = 설명들.join("\n\n");
+  const 입력 = typeof body?.입력 === "string" ? body.입력.trim() : "";
+  const 언어 = body?.언어 === "ko" ? "ko" : "zh";
+  const 이미지 = Array.isArray(body?.이미지) ? body.이미지.slice(0, 3) : [];
+
+  if (입력.length < 5 && 이미지.length === 0) {
+    return Response.json({ 상태: "물음", 내용: "인터뷰 주제나 분석할 파일 내용을 입력해 주세요." });
   }
 
-  const 최종입력 = 이미지설명
-    ? 입력 + "\n\n[업로드 이미지에서 확인한 내용]\n" + 이미지설명 + "\n\n이미지 설명은 참고 자료입니다. 이미지에서 확인할 수 없는 사실은 추측하지 마세요."
-    : 입력;
-
-  const 메시지 = [
-    { role: "system", content: 지시문 },
-    { role: "user", content: 최종입력 },
-  ];
-
-  let 결과 = null;
-  try {
-    결과 = await env.AI.run(모델, {
-      messages: 메시지,
-      max_tokens: 700,
-      response_format: { type: "json_schema", json_schema: 스키마 },
-    });
-  } catch {
-    // 스키마를 못 지키는 모델이면 한 번만 평범하게 다시 부른다.
+  const 이미지설명 = [];
+  for (let i = 0; i < 이미지.length; i++) {
+    const item = 이미지[i];
+    if (!item || typeof item.data !== "string" ||
+        !/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(item.data) ||
+        item.data.length > 3_000_000) continue;
     try {
-      결과 = await env.AI.run(모델, { messages: 메시지, max_tokens: 700 });
+      const encoded = item.data.slice(item.data.indexOf(",") + 1);
+      const binary = atob(encoded);
+      const imageBytes = Array.from(binary, c => c.charCodeAt(0));
+      const vision = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
+        prompt: "이미지의 내용과 읽을 수 있는 글자를 정확하게 설명하세요. 보이지 않는 정보는 추측하지 마세요.",
+        image: imageBytes,
+        max_tokens: 700,
+      });
+      const 설명 = 글로(모델출력(vision)).trim();
+      if (설명) 이미지설명.push("이미지 " + (i + 1) + " (" + String(item.name || "첨부 이미지").slice(0, 100) + "):\n" + 설명);
     } catch {
-      return Response.json(
-        { 상태: "오류", 내용: "지금은 답할 수 없습니다. 하루 사용 한도를 넘었거나 모델 이름이 틀렸을 수 있습니다." },
-        { status: 503 },
-      );
+      return Response.json({
+        상태: "오류",
+        내용: "이미지 분석에 실패했습니다. Cloudflare Workers AI의 Vision 모델 사용 권한과 Meta 라이선스 동의 여부를 확인해 주세요."
+      }, { status: 503 });
     }
   }
 
-  const 원시 = (결과 && 결과.response !== undefined) ? 결과.response : 결과;
-  const 구조 = 객체로(원시);
-  const 본문 = { 상태: "답", 내용: "" };
+  const 언어지시 = 언어 === "ko"
+    ? "반드시 자연스러운 한국어로 답변하세요."
+    : "请始终使用简体中文回答。";
+  const 지시문 = `당신은 전문 AI 인터뷰 도우미입니다.
+[사용자] ${대상.trim()}
+[업무] ${하는일.trim()}
+[품질 기준]
+${기준.map((x, i) => (i + 1) + ". " + x).join("\n")}
+[주의 사항]
+${멈춤.trim()}
 
-  if (구조 && typeof 구조.status === "string") {
-    본문.상태 = (구조.status === "ask") ? "물음" : "답";
-    본문.내용 = 글로(구조.text).trim();
+${언어지시}
+사용자가 선택한 작업 모드와 요청을 우선 수행하세요.
+첨부 문서에서 읽은 내용을 실제 자료로 취급하되, 자료에 없는 사실은 만들지 마세요.
+문서가 길면 핵심 내용을 빠뜨리지 않도록 주제별로 정리하세요.
+필요한 경우 제목과 번호 목록을 사용해 읽기 쉽게 작성하세요.
+답변은 반드시 일반 텍스트로 작성하고, 빈 답변을 반환하지 마세요.`;
+
+  const 최종입력 = 입력 + (이미지설명.length
+    ? "\n\n[업로드 이미지에서 확인한 내용]\n" + 이미지설명.join("\n\n")
+    : "");
+
+  try {
+    const 결과 = await env.AI.run(모델, {
+      messages: [
+        { role: "system", content: 지시문 },
+        { role: "user", content: 최종입력 },
+      ],
+      max_tokens: 1800,
+    });
+
+    const 원문 = 모델출력(결과);
+    const 객체 = 구조화(원문);
+    const 내용 = 객체 && typeof 객체.text === "string"
+      ? 객체.text.trim()
+      : 글로(원문).trim();
+
+    if (!내용) {
+      return Response.json({
+        상태: "오류",
+        내용: "AI 모델이 빈 결과를 반환했습니다. 입력 파일의 텍스트가 추출되었는지 확인한 뒤 다시 시도해 주세요."
+      }, { status: 502 });
+    }
+
+    return Response.json({
+      상태: 객체?.status === "ask" ? "물음" : "답",
+      내용,
+    });
+  } catch (error) {
+    return Response.json({
+      상태: "오류",
+      내용: "AI 분석 요청에 실패했습니다. Cloudflare의 Workers AI 바인딩, 모델 사용 한도 및 모델 이름을 확인해 주세요."
+    }, { status: 503 });
   }
-  if (!본문.내용) 본문.내용 = 글로(원시).trim() || "답을 만들지 못했습니다.";
-  if (디버그) 본문._원문 = (typeof 원시 === "string" ? 원시 : JSON.stringify(원시)).slice(0, 600);
-  return Response.json(본문);
 }
