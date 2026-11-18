@@ -812,7 +812,7 @@ function showResult(type,content) {
 
 async function askAI() {
   const input=$("q").value.trim();
-  if(!input) {
+  if(!input && !selectedFiles.length) {
     alert(t().empty);
     $("q").focus();
     return;
@@ -851,7 +851,7 @@ async function askAI() {
       ? "请使用简体中文回答。"
       : "반드시 자연스러운 한국어로 답변하세요.") +
     "\n\n" + t().mode[currentMode] +
-    "\n\n用户提供的内容：\n" + input;
+    "\n\n用户提供的内容：\n" + combinedInput;
 
   try {
     const response=await fetch("/api/ask",{
