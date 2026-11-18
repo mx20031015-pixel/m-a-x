@@ -68,19 +68,56 @@ export async function onRequestPost(context) {
   const 디버그 = new URL(request.url).searchParams.get("debug") === "1";
 
   let 입력 = "";
+  let 이미지 = [];
   try {
     const body = await request.json();
     입력 = (body && typeof body.입력 === "string") ? body.입력.trim() : "";
+    이미지 = Array.isArray(body?.이미지) ? body.이미지.slice(0, 3) : [];
   } catch { 입력 = ""; }
+
+  // 이미지 업로드는 최대 3장, 각 이미지 데이터 URL만 허용합니다.
+  이미지 = 이미지.filter((item) =>
+    item && typeof item.data === "string" &&
+    /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(item.data) &&
+    item.data.length <= 3_000_000
+  );
 
   // 모델을 부르기 전에 거르는 1차 멈춤. 한도도 아끼고, 멈춤이 눈에 보입니다.
   if (입력.length < 5) {
     return Response.json({ 상태: "물음", 내용: "무엇을 도와드릴지 한 줄만 적어 주세요." });
   }
 
+  // 이미지는 Vision 모델로 먼저 설명한 뒤, 기존 인터뷰 모델에 설명을 전달합니다.
+  // 업로드된 파일은 저장하지 않습니다.
+  let 이미지설명 = "";
+  if (이미지.length) {
+    const 설명들 = [];
+    for (let i = 0; i < 이미지.length; i++) {
+      try {
+        const vision = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
+          prompt: "이미지의 내용과 읽을 수 있는 글자를 정확하게 설명하세요. 보이지 않는 정보는 추측하지 마세요. 사용자의 인터뷰 작업과 관련된 정보만 간결하게 정리하세요.",
+          image: 이미지[i].data,
+          max_tokens: 450,
+        });
+        const 설명 = 글로(vision?.response ?? vision).trim();
+        if (설명) 설명들.push("이미지 " + (i + 1) + " (" + String(이미지[i].name || "첨부 이미지").slice(0, 100) + "):\n" + 설명);
+      } catch {
+        return Response.json(
+          { 상태: "오류", 내용: "이미지를 분석하지 못했습니다. Cloudflare에서 Llama 3.2 Vision 모델의 Meta 라이선스 동의가 필요할 수 있습니다. 이미지 크기를 줄이거나 텍스트로 내용을 입력해 주세요." },
+          { status: 503 },
+        );
+      }
+    }
+    이미지설명 = 설명들.join("\n\n");
+  }
+
+  const 최종입력 = 이미지설명
+    ? 입력 + "\n\n[업로드 이미지에서 확인한 내용]\n" + 이미지설명 + "\n\n이미지 설명은 참고 자료입니다. 이미지에서 확인할 수 없는 사실은 추측하지 마세요."
+    : 입력;
+
   const 메시지 = [
     { role: "system", content: 지시문 },
-    { role: "user", content: 입력 },
+    { role: "user", content: 최종입력 },
   ];
 
   let 결과 = null;
