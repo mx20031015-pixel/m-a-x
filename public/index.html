@@ -225,7 +225,38 @@ textarea:focus {
   border-color:var(--blue);
   box-shadow:0 0 0 3px rgba(83,120,255,.1);
 }
+
 textarea::placeholder { color:#59647b; }
+
+.upload-panel { margin-top:18px; }
+.upload-drop {
+  border:1px dashed #465575; border-radius:12px; padding:20px;
+  background:rgba(12,16,27,.65); text-align:center; cursor:pointer;
+  transition:.2s;
+}
+.upload-drop:hover,.upload-drop.dragover {
+  border-color:var(--blue); background:rgba(83,120,255,.08);
+}
+.upload-icon { font-size:25px; margin-bottom:8px; }
+.upload-main { color:var(--text); font-size:13px; font-weight:700; }
+.upload-sub { color:var(--muted); font-size:11px; margin-top:6px; line-height:1.6; }
+.upload-actions { display:flex; justify-content:center; gap:8px; margin-top:12px; }
+.file-list { display:grid; gap:8px; margin-top:12px; }
+.file-item {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  border:1px solid var(--line); border-radius:9px; background:#131827;
+}
+.file-kind { width:30px; height:30px; display:grid; place-items:center;
+  border-radius:8px; background:#202b48; color:#bdcaff; font-size:12px; font-weight:800; }
+.file-info { min-width:0; flex:1; text-align:left; }
+.file-name { color:var(--text); font-size:12px; overflow-wrap:anywhere; }
+.file-size { color:var(--muted); font-size:10px; margin-top:3px; }
+.file-remove {
+  border:1px solid var(--line); background:transparent; color:#aab5cb;
+  border-radius:7px; padding:5px 9px; font-size:11px;
+}
+.file-note { color:var(--muted); font-size:11px; line-height:1.6; margin-top:9px; }
+
 
 .examples {
   display:flex;
@@ -428,6 +459,25 @@ textarea::placeholder { color:#59647b; }
       placeholder="请描述你的采访主题、目标、采访对象或已有的采访记录……"
       spellcheck="false"></textarea>
 
+    <div class="upload-panel">
+      <div class="input-head">
+        <label id="uploadTitle">上传采访资料</label>
+        <span class="hint" id="uploadLimit">最多 5 个文件</span>
+      </div>
+      <input id="fileInput" type="file" hidden multiple
+        accept="image/png,image/jpeg,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,.pdf,.docx,.txt">
+      <div class="upload-drop" id="dropZone" role="button" tabindex="0">
+        <div class="upload-icon">↥</div>
+        <div class="upload-main" id="uploadMain">点击选择文件，或拖拽文件到这里</div>
+        <div class="upload-sub" id="uploadSub">支持 PNG、JPG、WEBP、PDF、DOCX、TXT；单个文件最大 10 MB</div>
+        <div class="upload-actions">
+          <button class="secondary" id="chooseFiles" type="button">选择文件</button>
+        </div>
+      </div>
+      <div class="file-list" id="fileList"></div>
+      <div class="file-note" id="fileNote">图片将由 AI 识别；PDF 和 Word 将在浏览器中提取文字后交给 AI 分析。文件不会保存到服务器。</div>
+    </div>
+
     <div class="examples">
       <span id="exampleLabel">试试这些：</span>
       <button class="example" type="button" data-example="student">学生采访</button>
@@ -468,6 +518,8 @@ textarea::placeholder { color:#59647b; }
 
 </main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
@@ -583,6 +635,13 @@ function updateLanguage(lang) {
   $("go").textContent = x.go;
   $("outputTitle").textContent = x.output;
   $("copy").textContent = x.copy;
+  $("uploadTitle").textContent = x.uploadTitle;
+  $("uploadLimit").textContent = x.uploadLimit;
+  $("uploadMain").textContent = x.uploadMain;
+  $("uploadSub").textContent = x.uploadSub;
+  $("chooseFiles").textContent = x.chooseFiles;
+  $("fileNote").textContent = x.fileNote;
+  renderFiles();
   $("footerText").textContent = x.footer;
 }
 
@@ -607,6 +666,7 @@ document.querySelectorAll(".example").forEach(btn=>{
 
 $("clear").addEventListener("click",()=>{
   $("q").value = "";
+  selectedFiles.length=0; renderFiles();
   $("q").focus();
 });
 
@@ -616,9 +676,109 @@ $("reset").addEventListener("click",()=>{
     b.classList.toggle("active",b.dataset.mode==="plan")
   );
   $("q").value = "";
+  selectedFiles.length=0; renderFiles();
   $("out").classList.remove("show");
   lastResult = "";
 });
+
+const selectedFiles = [];
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_TEXT_CHARS = 30000;
+
+function formatSize(bytes) {
+  return bytes < 1024*1024 ? (bytes/1024).toFixed(1)+" KB" : (bytes/1024/1024).toFixed(1)+" MB";
+}
+function renderFiles() {
+  const list = $("fileList");
+  if (!list) return;
+  list.innerHTML = "";
+  selectedFiles.forEach((file,index) => {
+    const row = document.createElement("div");
+    row.className = "file-item";
+    const kind = document.createElement("div");
+    kind.className = "file-kind";
+    kind.textContent = file.type.startsWith("image/") ? "IMG" : file.name.split(".").pop().toUpperCase();
+    const info = document.createElement("div");
+    info.className = "file-info";
+    const name = document.createElement("div");
+    name.className = "file-name"; name.textContent = file.name;
+    const size = document.createElement("div");
+    size.className = "file-size"; size.textContent = formatSize(file.size);
+    info.append(name,size);
+    const remove = document.createElement("button");
+    remove.type = "button"; remove.className = "file-remove";
+    remove.textContent = t().remove;
+    remove.addEventListener("click",()=>{ selectedFiles.splice(index,1); renderFiles(); });
+    row.append(kind,info,remove); list.append(row);
+  });
+}
+function addFiles(fileList) {
+  for (const file of fileList) {
+    if (selectedFiles.length >= MAX_FILES) { alert(t().tooMany); break; }
+    if (file.size > MAX_FILE_SIZE) { alert(t().fileTooLarge + file.name); continue; }
+    const ext = file.name.split(".").pop().toLowerCase();
+    const valid = ["png","jpg","jpeg","webp","pdf","docx","txt"].includes(ext);
+    if (!valid) { alert(t().unsupported + file.name); continue; }
+    if (!selectedFiles.some(f=>f.name===file.name && f.size===file.size)) selectedFiles.push(file);
+  }
+  renderFiles();
+}
+$("chooseFiles").addEventListener("click",()=>$("fileInput").click());
+$("dropZone").addEventListener("click",e=>{
+  if (e.target.closest("button")) return;
+  $("fileInput").click();
+});
+$("dropZone").addEventListener("keydown",e=>{
+  if(e.key==="Enter" || e.key===" ") { e.preventDefault(); $("fileInput").click(); }
+});
+$("fileInput").addEventListener("change",e=>{
+  addFiles(e.target.files); e.target.value="";
+});
+["dragenter","dragover"].forEach(name=>$("dropZone").addEventListener(name,e=>{
+  e.preventDefault(); $("dropZone").classList.add("dragover");
+}));
+["dragleave","drop"].forEach(name=>$("dropZone").addEventListener(name,e=>{
+  e.preventDefault(); $("dropZone").classList.remove("dragover");
+}));
+$("dropZone").addEventListener("drop",e=>addFiles(e.dataTransfer.files));
+
+async function readAsDataURL(file) {
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(new Error("File read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+async function extractAttachment(file) {
+  const ext=file.name.split(".").pop().toLowerCase();
+  if(["png","jpg","jpeg","webp"].includes(ext)) {
+    const data=await readAsDataURL(file);
+    return {kind:"image",name:file.name,data};
+  }
+  if(ext==="txt") return {kind:"text",name:file.name,text:await file.text()};
+  if(ext==="pdf") {
+    if(!window.pdfjsLib) throw new Error("PDF reader library did not load");
+    const pdfjs=window.pdfjsLib;
+    pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;
+    let text="";
+    for(let pageNo=1;pageNo<=pdf.numPages;pageNo++) {
+      const page=await pdf.getPage(pageNo);
+      const content=await page.getTextContent();
+      text += "\n[PDF page "+pageNo+"]\n"+content.items.map(item=>item.str).join(" ");
+      if(text.length>MAX_TEXT_CHARS) break;
+    }
+    return {kind:"text",name:file.name,text};
+  }
+  if(ext==="docx") {
+    if(!window.mammoth) throw new Error("Word reader library did not load");
+    const result=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});
+    return {kind:"text",name:file.name,text:result.value};
+  }
+  throw new Error("Unsupported file");
+}
 
 function showResult(type,content) {
   const x=t();
@@ -654,6 +814,24 @@ async function askAI() {
   $("result").textContent=t().loading;
   $("copy").disabled=true;
 
+  let attachmentText = "";
+  const images = [];
+  if(selectedFiles.length) {
+    try {
+      $("result").textContent = t().processing;
+      for(const file of selectedFiles) {
+        const item=await extractAttachment(file);
+        if(item.kind==="image") images.push({name:item.name,data:item.data});
+        else attachmentText += "\\n\\n[첨부 파일: "+item.name+"]\\n"+item.text;
+      }
+    } catch(error) {
+      showResult("error",language==="zh" ? "读取附件失败："+error.message : "첨부 파일을 읽지 못했습니다: "+error.message);
+      button.disabled=false;
+      return;
+    }
+  }
+
+  const combinedInput = input + (attachmentText ? "\\n\\n以下是上传文件提取的内容：\\n"+attachmentText.slice(0,MAX_TEXT_CHARS) : "");
   const prompt =
     (language==="zh"
       ? "请使用简体中文回答。"
@@ -665,7 +843,7 @@ async function askAI() {
     const response=await fetch("/api/ask",{
       method:"POST",
       headers:{"content-type":"application/json"},
-      body:JSON.stringify({输入:prompt})
+      body:JSON.stringify({输入:prompt, 이미지:images})
     });
 
     if(!response.ok) throw new Error("HTTP "+response.status);
