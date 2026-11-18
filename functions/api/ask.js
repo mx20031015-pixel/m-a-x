@@ -94,9 +94,12 @@ export async function onRequestPost(context) {
     const 설명들 = [];
     for (let i = 0; i < 이미지.length; i++) {
       try {
+        const encoded = 이미지[i].data.slice(이미지[i].data.indexOf(",") + 1);
+        const binary = atob(encoded);
+        const imageBytes = Array.from(binary, (char) => char.charCodeAt(0));
         const vision = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
           prompt: "이미지의 내용과 읽을 수 있는 글자를 정확하게 설명하세요. 보이지 않는 정보는 추측하지 마세요. 사용자의 인터뷰 작업과 관련된 정보만 간결하게 정리하세요.",
-          image: 이미지[i].data,
+          image: imageBytes,
           max_tokens: 450,
         });
         const 설명 = 글로(vision?.response ?? vision).trim();
