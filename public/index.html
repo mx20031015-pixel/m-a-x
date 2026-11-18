@@ -833,8 +833,10 @@ async function askAI() {
       $("result").textContent = t().processing;
       for(const file of selectedFiles) {
         const item=await extractAttachment(file);
-        if(item.kind==="image") images.push({name:item.name,data:item.data});
-        else attachmentText += "\\n\\n[첨부 파일: "+item.name+"]\\n"+item.text;
+        if(item.kind==="image") {
+          if(images.length >= 3) throw new Error(language==="zh" ? "最多支持 3 张图片。" : "이미지는 최대 3장까지 지원합니다.");
+          images.push({name:item.name,data:item.data});
+        } else attachmentText += "\n\n[附件文件: "+item.name+"]\n"+item.text;
       }
     } catch(error) {
       showResult("error",language==="zh" ? "读取附件失败："+error.message : "첨부 파일을 읽지 못했습니다: "+error.message);
@@ -843,7 +845,7 @@ async function askAI() {
     }
   }
 
-  const combinedInput = input + (attachmentText ? "\\n\\n以下是上传文件提取的内容：\\n"+attachmentText.slice(0,MAX_TEXT_CHARS) : "");
+  const combinedInput = input + (attachmentText ? "\n\n以下是上传文件提取的内容：\n"+attachmentText.slice(0,MAX_TEXT_CHARS) : "");
   const prompt =
     (language==="zh"
       ? "请使用简体中文回答。"
