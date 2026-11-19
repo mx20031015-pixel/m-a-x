@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Career Compass | AI 职业规划助手</title>
+<title>Career Compass | AI 职业发展助手</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{
@@ -72,8 +72,8 @@
   </header>
   <main>
     <div class="eyebrow" id="eyebrow">YOUR FUTURE, YOUR DIRECTION</div>
-    <h1 class="hero-title" id="title">找到方向，开始行动。</h1>
-    <p class="desc" id="desc">根据真实职业规划访谈中出现的困惑，帮助你探索职业方向、提升能力、规划语言学习和准备韩国就业。</p>
+    <h1 class="hero-title" id="title">从职业困惑，到可执行的计划。</h1>
+    <p class="desc" id="desc">为在韩国探索职业方向的大学生与留学生提供岗位比较、技能成长、语言学习以及求职行动建议。</p>
     <div class="steps" id="steps"><span>① 探索方向</span><span>② 检查能力</span><span>③ 制定计划</span><span>④ 准备就业</span></div>
     <section class="workspace">
       <label id="modeLabel">选择你目前最需要的帮助</label>
@@ -81,7 +81,7 @@
       <p class="hint" id="modeHint"></p>
       <label id="inputLabel" for="q">告诉我们你的现状</label>
       <textarea id="q"></textarea>
-      <button id="go" type="button">生成我的行动建议</button>
+      <button id="go" type="button">制定我的下一步计划</button>
       <div id="out" aria-live="polite"></div>
     </section>
   </main>
@@ -92,17 +92,17 @@
 const $ = id => document.getElementById(id);
 let language = "zh";
 let currentMode = "career";
-const modes = ["career","skills","study","job","interview"];
+const modes = ["career","skills","study","job","portfolio"];
 const locale = {
   zh:{
     eyebrow:"YOUR FUTURE, YOUR DIRECTION",
-    title:"找到方向，开始行动。",
-    desc:"根据真实职业规划访谈中出现的困惑，帮助你探索职业方向、提升能力、规划语言学习和准备韩国就业。",
+    title:"从职业困惑，到可执行的计划。",
+    desc:"为在韩国探索职业方向的大学生与留学生提供岗位比较、技能成长、语言学习以及求职行动建议。",
     steps:["① 探索方向","② 检查能力","③ 制定计划","④ 准备就业"],
     modeLabel:"选择你目前最需要的帮助",
     inputLabel:"告诉我们你的现状",
-    go:"生成我的行动建议",
-    footer:"请不要输入姓名、联系方式、学号等个人信息。AI 建议仅供规划参考；实际招聘、资格和签证条件应以官方信息为准。",
+    go:"制定我的下一步计划",
+    footer:"不用上传采访记录。请根据自己的目标填写现状，不要提供姓名、联系方式或学号。招聘、资格与签证条件请以官方信息为准。",
     placeholder:"例如：我是信息社会媒体专业学生，对主播和新媒体感兴趣，但不知道应先学什么……",
     empty:"请先描述你的现状或问题。",
     loading:"正在分析你的情况……",
@@ -113,25 +113,25 @@ const locale = {
       skills:["技能与资格检查","分析能力差距及待核实的条件"],
       study:["语言与技能学习计划","TOPIK、IELTS 与实务技能"],
       job:["韩国求职与实习准备","了解招聘要求与行动步骤"],
-      interview:["采访与记录整理","设计问题、整理真实采访资料"]
+      portfolio:["作品集与实践经验","制定拍摄、剪辑、数据分析与实习项目"]
     },
     hints:{
       career:"你可以告诉我喜欢什么工作、对专业有哪些疑虑，以及正在考虑的备选职业。",
       skills:"写下目标岗位、目前会的技能；我会区分已知能力、需要补足的能力与待核实的要求。",
       study:"填写 TOPIK／IELTS 当前水平、目标以及每周可学习时间，获得有优先顺序的计划。",
       job:"写下目标行业、实习经历或求职困难；我会给出学校资源和官方招聘信息的核实步骤。",
-      interview:"提供采访主题、目的或真实记录；我会保留原本的采访辅助功能。"
+      portfolio:"告诉我想做的媒体方向、目前有哪些作品或技能，我会提出能逐步完成的作品和实战项目。"
     }
   },
   ko:{
     eyebrow:"YOUR FUTURE, YOUR DIRECTION",
-    title:"진로를 찾고, 행동을 시작하세요.",
-    desc:"실제 진로 계획 인터뷰에서 드러난 고민을 바탕으로 진로 탐색, 역량 점검, 언어 학습, 한국 취업 준비를 돕습니다.",
+    title:"진로 고민을 실행 계획으로 바꾸세요.",
+    desc:"한국에서 진로를 준비하는 대학생과 유학생을 위해 직무 탐색, 실무 역량, 언어 학습, 취업 실행 계획을 제안합니다.",
     steps:["① 진로 탐색","② 역량 점검","③ 계획 수립","④ 취업 준비"],
     modeLabel:"지금 가장 필요한 도움을 선택하세요",
     inputLabel:"현재 상황을 알려주세요",
-    go:"맞춤 행동 계획 받기",
-    footer:"이름, 연락처, 학번과 같은 개인정보를 입력하지 마세요. AI 제안은 참고용이며 채용·자격·비자 조건은 공식 자료로 확인해야 합니다.",
+    go:"나의 다음 단계 계획 만들기",
+    footer:"인터뷰 자료를 올릴 필요가 없습니다. 본인의 목표와 상황을 입력하되 이름·연락처·학번은 제외하세요. 채용·자격·비자 조건은 공식 자료로 확인하세요.",
     placeholder:"예: 정보사회미디어학과에 다니며 방송 진행과 뉴미디어에 관심이 있지만 무엇부터 준비할지 모르겠습니다.",
     empty:"현재 상황이나 질문을 먼저 입력해 주세요.",
     loading:"현재 상황을 분석하고 있습니다…",
@@ -142,14 +142,14 @@ const locale = {
       skills:["역량·자격 점검","역량 차이와 확인할 조건 분석"],
       study:["언어·실무 학습 계획","TOPIK·IELTS 및 실무 역량"],
       job:["한국 취업·인턴십 준비","채용 조건과 실천 순서 확인"],
-      interview:["인터뷰·기록 정리","질문 설계 및 실제 기록 정리"]
+      portfolio:["포트폴리오·실무 경험","촬영·편집·데이터 분석 프로젝트 설계"]
     },
     hints:{
       career:"관심 직업, 전공에 대한 고민, 대안으로 생각하는 진로를 알려주세요.",
       skills:"희망 직무와 현재 할 수 있는 일을 적어 주세요. 확인된 역량과 추가로 확인할 조건을 나눕니다.",
       study:"TOPIK·IELTS 현재 실력, 목표, 일주일 학습 가능 시간을 적어 주세요.",
       job:"희망 업계, 인턴십 경험, 취업 준비의 어려움을 적어 주세요. 공식 채용 정보 확인 방법을 안내합니다.",
-      interview:"인터뷰 주제와 목적 또는 실제 기록을 입력해 주세요."
+      portfolio:"관심 있는 미디어 직무, 현재 작품과 기술을 알려주세요. 실천 가능한 프로젝트를 제안합니다."
     }
   }
 };
@@ -182,7 +182,7 @@ function updateLanguage(next){
   }));
   $("modeHint").textContent=x.hints[currentMode];
   $("q").placeholder=currentMode==="career"?x.placeholder:x.hints[currentMode];
-  document.title=(language==="zh"?"AI 职业规划助手":"AI 진로 도우미")+" | Career Compass";
+  document.title=(language==="zh"?"AI 职业发展助手":"AI 진로 도우미")+" | Career Compass";
   const tag=$("out").querySelector(".tag");
   if(tag && $("out").dataset.status) tag.textContent=({물음:x.ask,오류:x.error})[$("out").dataset.status]||x.answer;
 }
