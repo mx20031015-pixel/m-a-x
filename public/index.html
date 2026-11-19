@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>남을 위한 AI</title>
+<title>Career Compass | AI 职业规划助手</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{
-    --bg:#0B0B0C; --fg:#fff; --dim:#8A8D93; --blue:#1A46F0;
-    --line:#2A2C30; --panel:#16171A;
+    --bg:#0a1122; --fg:#f5f8ff; --dim:#a7b6ce; --blue:#497bfa;
+    --line:#2b3b58; --panel:#14213a;
   }
   *{box-sizing:border-box}
   body{
-    margin:0; background:var(--bg); color:var(--fg);
+    margin:0; background:radial-gradient(circle at 80% -15%,#1f3f75,transparent 52%),var(--bg); color:var(--fg);
     font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:720px; margin:0 auto; padding:72px 20px 96px}
-  h1{font-size:44px; line-height:1.18; letter-spacing:-1.4px; font-weight:800; margin:0 0 14px}
+  .wrap{max-width:850px; margin:0 auto; padding:40px 20px 96px}
+  h1{font-size:48px; line-height:1.18; letter-spacing:-1.4px; font-weight:800; margin:0 0 14px}
   .desc{color:var(--dim); font-size:17px; line-height:1.65; margin:0 0 40px}
-  label{display:block; font-size:13px; font-weight:700; letter-spacing:2px; color:#5E6066; margin-bottom:10px}
+  label{display:block; font-size:13px; font-weight:700; letter-spacing:2px; color:#a4b7da; margin-bottom:10px}
   textarea{
     width:100%; min-height:130px; resize:vertical; padding:16px;
     background:var(--panel); color:var(--fg); border:1px solid var(--line);
@@ -46,99 +46,179 @@
   .err{border-top-color:#8A8D93}
   .foot{margin-top:72px; padding-top:20px; border-top:1px solid var(--line);
         color:#5E6066; font-size:13px; line-height:1.8}
-  @media (max-width:520px){ h1{font-size:34px} .wrap{padding:48px 18px 72px} }
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:66px}
+  .brand{font-size:15px;font-weight:800;letter-spacing:.4px}
+  .lang-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .lang-switch button{margin:0;padding:8px 14px;border-radius:7px;font-size:13px;background:transparent;color:var(--dim)}
+  .lang-switch button.active{background:var(--blue);color:white}
+  .eyebrow{font-size:12px;letter-spacing:2px;color:#90b6ff;font-weight:800;margin-bottom:16px}
+  .hero-title{max-width:720px}
+  .steps{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 30px}
+  .steps span{font-size:12px;color:#c6d9fa;border:1px solid var(--line);background:#132340;padding:8px 12px;border-radius:30px}
+  .workspace{border:1px solid var(--line);background:rgba(15,27,50,.92);padding:24px;border-radius:18px;box-shadow:0 18px 60px #0003}
+  .mode:hover{border-color:#8eacff}
+  .foot{color:#8498b9}
+  @media (max-width:520px){.top{margin-bottom:48px}.workspace{padding:16px}.mode{font-size:13px}.modes{gap:7px}  h1{font-size:34px} .wrap{padding:48px 18px 72px} }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1 id="title">준비 중</h1>
-  <p class="desc" id="desc"></p>
-
-  <label>진로 준비 도구 선택</label>
-  <div class="modes" aria-label="진로 준비 도구">
-    <button class="mode active" type="button" data-mode="career" aria-pressed="true">진로 방향 비교<small>희망 직업과 대안 비교</small></button>
-    <button class="mode" type="button" data-mode="skills" aria-pressed="false">역량·자격 점검<small>부족한 역량과 확인할 조건</small></button>
-    <button class="mode" type="button" data-mode="study" aria-pressed="false">학습 계획<small>TOPIK·IELTS·실무 공부</small></button>
-    <button class="mode" type="button" data-mode="job" aria-pressed="false">한국 취업 준비<small>인턴십과 채용 준비 순서</small></button>
-    <button class="mode" type="button" data-mode="interview" aria-pressed="false">인터뷰 도우미<small>기존 인터뷰·기록 정리 기능</small></button>
-  </div>
-  <p class="hint" id="modeHint">관심 직업과 고민을 적어 주세요. 확인되지 않은 조건은 별도로 표시합니다.</p>
-  <label for="q">현재 상황과 질문</label>
-  <textarea id="q" placeholder=""></textarea>
-  <button id="go">물어보기</button>
-
-  <div id="out"></div>
-
-  <div class="foot">
-    입력한 내용은 저장하지 않습니다. 답변을 만드는 데에만 쓰이고 바로 사라집니다.<br>
-    사람 이름, 연락처, 학번 같은 것은 적지 마세요.
-  </div>
+  <header class="top">
+    <div class="brand">✦ CAREER COMPASS <span style="color:#9fb5dd">/ AI</span></div>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button id="langZh" type="button" class="active" aria-pressed="true">中文</button>
+      <button id="langKo" type="button" aria-pressed="false">한국어</button>
+    </div>
+  </header>
+  <main>
+    <div class="eyebrow" id="eyebrow">YOUR FUTURE, YOUR DIRECTION</div>
+    <h1 class="hero-title" id="title">找到方向，开始行动。</h1>
+    <p class="desc" id="desc">根据真实职业规划访谈中出现的困惑，帮助你探索职业方向、提升能力、规划语言学习和准备韩国就业。</p>
+    <div class="steps" id="steps"><span>① 探索方向</span><span>② 检查能力</span><span>③ 制定计划</span><span>④ 准备就业</span></div>
+    <section class="workspace">
+      <label id="modeLabel">选择你目前最需要的帮助</label>
+      <div class="modes" id="modes" aria-label="工作模式"></div>
+      <p class="hint" id="modeHint"></p>
+      <label id="inputLabel" for="q">告诉我们你的现状</label>
+      <textarea id="q"></textarea>
+      <button id="go" type="button">生成我的行动建议</button>
+      <div id="out" aria-live="polite"></div>
+    </section>
+  </main>
+  <footer class="foot" id="footer">请不要输入姓名、联系方式、学号等个人信息。AI 的建议仅供规划参考；实际招聘、资格和签证条件应以官方信息为准。</footer>
 </div>
 
 <script>
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
+let language = "zh";
 let currentMode = "career";
-const modeHints = {
-  career:"희망 직업과 대안 진로를 적어 주세요.",
-  skills:"관심 직무와 현재 익힌 기술을 적어 주세요.",
-  study:"현재 TOPIK·IELTS 수준, 목표, 공부할 수 있는 시간을 적어 주세요.",
-  job:"한국에서 희망하는 직무와 현재 준비 상황을 적어 주세요.",
-  interview:"인터뷰 주제, 목적이나 실제 기록을 적어 주세요."
-};
-document.querySelectorAll("[data-mode]").forEach(button => {
-  button.addEventListener("click", () => {
-    currentMode = button.dataset.mode;
-    document.querySelectorAll("[data-mode]").forEach(b => {
-      const active = b === button;
-      b.classList.toggle("active", active);
-      b.setAttribute("aria-pressed", String(active));
-    });
-    $("modeHint").textContent = modeHints[currentMode];
-    $("q").placeholder = modeHints[currentMode];
-  });
-});
-
-fetch("/api/meta").then(r => r.json()).then(m => {
-  $("title").textContent = m.제목 || "남을 위한 AI";
-  $("desc").textContent = m.설명 || "";
-  $("q").placeholder = m.입력안내 || "";
-  $("go").textContent = m.버튼 || "물어보기";
-  document.title = m.제목 || document.title;
-}).catch(() => {});
-
-function 보여주기(상태, 내용) {
-  const cls = 상태 === "물음" ? "card ask" : (상태 === "오류" ? "card err" : "card");
-  const tag = 상태 === "물음" ? "먼저 확인할 것" : (상태 === "오류" ? "실패" : "답");
-  $("out").innerHTML =
-    '<div class="' + cls + '"><div class="tag">' + tag + '</div>' +
-    '<div class="body"></div></div>';
-  $("out").querySelector(".body").textContent = 내용;
-}
-
-async function 물어보기() {
-  const 입력 = $("q").value.trim();
-  if (!입력) { $("q").focus(); return; }
-  $("go").disabled = true;
-  보여주기("답", "생각하는 중…");
-  try {
-    const r = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ 입력, 모드: currentMode }),
-    });
-    const d = await r.json();
-    보여주기(d.상태 || (r.ok ? "답" : "오류"), d.내용 || "답을 받지 못했습니다.");
-  } catch {
-    보여주기("오류", "연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요.");
-  } finally {
-    $("go").disabled = false;
+const modes = ["career","skills","study","job","interview"];
+const locale = {
+  zh:{
+    eyebrow:"YOUR FUTURE, YOUR DIRECTION",
+    title:"找到方向，开始行动。",
+    desc:"根据真实职业规划访谈中出现的困惑，帮助你探索职业方向、提升能力、规划语言学习和准备韩国就业。",
+    steps:["① 探索方向","② 检查能力","③ 制定计划","④ 准备就业"],
+    modeLabel:"选择你目前最需要的帮助",
+    inputLabel:"告诉我们你的现状",
+    go:"生成我的行动建议",
+    footer:"请不要输入姓名、联系方式、学号等个人信息。AI 建议仅供规划参考；实际招聘、资格和签证条件应以官方信息为准。",
+    placeholder:"例如：我是信息社会媒体专业学生，对主播和新媒体感兴趣，但不知道应先学什么……",
+    empty:"请先描述你的现状或问题。",
+    loading:"正在分析你的情况……",
+    answer:"行动建议",ask:"需要补充的信息",error:"请求失败",
+    noAnswer:"没有收到有效回答。",network:"连接失败，请检查网络后重试。",
+    modeNames:{
+      career:["职业方向探索","比较传统媒体、新媒体与其他选择"],
+      skills:["技能与资格检查","分析能力差距及待核实的条件"],
+      study:["语言与技能学习计划","TOPIK、IELTS 与实务技能"],
+      job:["韩国求职与实习准备","了解招聘要求与行动步骤"],
+      interview:["采访与记录整理","设计问题、整理真实采访资料"]
+    },
+    hints:{
+      career:"你可以告诉我喜欢什么工作、对专业有哪些疑虑，以及正在考虑的备选职业。",
+      skills:"写下目标岗位、目前会的技能；我会区分已知能力、需要补足的能力与待核实的要求。",
+      study:"填写 TOPIK／IELTS 当前水平、目标以及每周可学习时间，获得有优先顺序的计划。",
+      job:"写下目标行业、实习经历或求职困难；我会给出学校资源和官方招聘信息的核实步骤。",
+      interview:"提供采访主题、目的或真实记录；我会保留原本的采访辅助功能。"
+    }
+  },
+  ko:{
+    eyebrow:"YOUR FUTURE, YOUR DIRECTION",
+    title:"진로를 찾고, 행동을 시작하세요.",
+    desc:"실제 진로 계획 인터뷰에서 드러난 고민을 바탕으로 진로 탐색, 역량 점검, 언어 학습, 한국 취업 준비를 돕습니다.",
+    steps:["① 진로 탐색","② 역량 점검","③ 계획 수립","④ 취업 준비"],
+    modeLabel:"지금 가장 필요한 도움을 선택하세요",
+    inputLabel:"현재 상황을 알려주세요",
+    go:"맞춤 행동 계획 받기",
+    footer:"이름, 연락처, 학번과 같은 개인정보를 입력하지 마세요. AI 제안은 참고용이며 채용·자격·비자 조건은 공식 자료로 확인해야 합니다.",
+    placeholder:"예: 정보사회미디어학과에 다니며 방송 진행과 뉴미디어에 관심이 있지만 무엇부터 준비할지 모르겠습니다.",
+    empty:"현재 상황이나 질문을 먼저 입력해 주세요.",
+    loading:"현재 상황을 분석하고 있습니다…",
+    answer:"행동 제안",ask:"추가로 필요한 정보",error:"요청 실패",
+    noAnswer:"유효한 답변을 받지 못했습니다.",network:"연결에 실패했습니다. 네트워크를 확인하고 다시 시도해 주세요.",
+    modeNames:{
+      career:["진로 방향 탐색","전통 미디어·뉴미디어 및 대안 비교"],
+      skills:["역량·자격 점검","역량 차이와 확인할 조건 분석"],
+      study:["언어·실무 학습 계획","TOPIK·IELTS 및 실무 역량"],
+      job:["한국 취업·인턴십 준비","채용 조건과 실천 순서 확인"],
+      interview:["인터뷰·기록 정리","질문 설계 및 실제 기록 정리"]
+    },
+    hints:{
+      career:"관심 직업, 전공에 대한 고민, 대안으로 생각하는 진로를 알려주세요.",
+      skills:"희망 직무와 현재 할 수 있는 일을 적어 주세요. 확인된 역량과 추가로 확인할 조건을 나눕니다.",
+      study:"TOPIK·IELTS 현재 실력, 목표, 일주일 학습 가능 시간을 적어 주세요.",
+      job:"희망 업계, 인턴십 경험, 취업 준비의 어려움을 적어 주세요. 공식 채용 정보 확인 방법을 안내합니다.",
+      interview:"인터뷰 주제와 목적 또는 실제 기록을 입력해 주세요."
+    }
   }
+};
+function updateLanguage(next){
+  language=next;
+  const x=locale[language];
+  document.documentElement.lang=language==="zh"?"zh-CN":"ko";
+  $("langZh").classList.toggle("active",language==="zh");
+  $("langKo").classList.toggle("active",language==="ko");
+  $("langZh").setAttribute("aria-pressed",String(language==="zh"));
+  $("langKo").setAttribute("aria-pressed",String(language==="ko"));
+  $("eyebrow").textContent=x.eyebrow;
+  $("title").textContent=x.title;
+  $("desc").textContent=x.desc;
+  $("modeLabel").textContent=x.modeLabel;
+  $("inputLabel").textContent=x.inputLabel;
+  $("go").textContent=x.go;
+  $("footer").textContent=x.footer;
+  $("steps").replaceChildren(...x.steps.map(s=>{const e=document.createElement("span");e.textContent=s;return e;}));
+  $("modes").replaceChildren(...modes.map(m=>{
+    const b=document.createElement("button");
+    b.type="button";b.className="mode"+(currentMode===m?" active":"");
+    b.setAttribute("aria-pressed",String(currentMode===m));
+    b.dataset.mode=m;
+    const name=document.createElement("strong");name.textContent=x.modeNames[m][0];
+    const sub=document.createElement("small");sub.textContent=x.modeNames[m][1];
+    b.append(name,sub);
+    b.addEventListener("click",()=>{currentMode=m;updateLanguage(language);});
+    return b;
+  }));
+  $("modeHint").textContent=x.hints[currentMode];
+  $("q").placeholder=currentMode==="career"?x.placeholder:x.hints[currentMode];
+  document.title=(language==="zh"?"AI 职业规划助手":"AI 진로 도우미")+" | Career Compass";
+  const tag=$("out").querySelector(".tag");
+  if(tag && $("out").dataset.status) tag.textContent=({물음:x.ask,오류:x.error})[$("out").dataset.status]||x.answer;
 }
-
-$("go").addEventListener("click", 물어보기);
-$("q").addEventListener("keydown", (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") 물어보기();
-});
+function showResult(status,content){
+  const x=locale[language];
+  $("out").dataset.status=status;
+  const card=document.createElement("div");
+  card.className=status==="물음"?"card ask":status==="오류"?"card err":"card";
+  const label=document.createElement("div");label.className="tag";
+  label.textContent=status==="물음"?x.ask:status==="오류"?x.error:x.answer;
+  const body=document.createElement("div");body.className="body";body.textContent=content;
+  card.append(label,body);$("out").replaceChildren(card);
+}
+async function askAI(){
+  const input=$("q").value.trim();
+  if(!input){alert(locale[language].empty);$("q").focus();return;}
+  const lang=language;
+  $("go").disabled=true;
+  showResult("답",locale[lang].loading);
+  try{
+    const r=await fetch("/api/ask",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({입력:input,모드:currentMode,언어:lang})
+    });
+    const data=await r.json();
+    showResult(r.ok?(data.상태||"답"):"오류",data.내용||locale[language].noAnswer);
+  }catch(e){
+    showResult("오류",locale[language].network);
+  }finally{$("go").disabled=false;}
+}
+$("langZh").addEventListener("click",()=>updateLanguage("zh"));
+$("langKo").addEventListener("click",()=>updateLanguage("ko"));
+$("go").addEventListener("click",askAI);
+$("q").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter")askAI();});
+updateLanguage("zh");
 </script>
 </body>
 </html>
