@@ -8,6 +8,13 @@
 
 import { 대상, 하는일, 기준, 멈춤, 모델 } from "../_config.js";
 
+const 모드지시 = {
+  career: "희망 직업과 대안을 비교해 주세요. 관심, 필요한 역량, 불확실성, 다음 행동을 구분하세요. 사용자를 대신하여 직업을 결정하지 마세요.",
+  skills: "희망 직무의 역량을 현재 역량, 추가 학습, 실제 공고에서 확인할 자격 조건으로 분류하세요. 확인되지 않은 자격증을 필수라고 단정하지 마세요.",
+  study: "현재 실력과 공부할 수 있는 시간을 근거로 TOPIK·IELTS·실무 역량의 우선순위, 주간 계획, 점검 방법을 제안하세요. 꼭 필요한 정보가 없으면 하나만 질문하세요.",
+  job: "한국 취업 준비에서 목표 직무, 공식 채용 공고의 요건 확인, 학교 취업센터·국제처, 인턴십 탐색, 지원 준비 순으로 행동 계획을 작성하세요. 채용 여부·비자 규정을 지어내지 마세요.",
+  interview: "기존 인터뷰 질문 설계, 기록 정리, 분석, 보고서 작성 기능을 수행하세요."
+};
 const 지시문 = `당신은 아래 사람을 위해 일합니다.
 
 [쓰는 사람]
@@ -68,9 +75,11 @@ export async function onRequestPost(context) {
   const 디버그 = new URL(request.url).searchParams.get("debug") === "1";
 
   let 입력 = "";
+  let 모드 = "interview";
   try {
     const body = await request.json();
     입력 = (body && typeof body.입력 === "string") ? body.입력.trim() : "";
+    if (typeof body?.모드 === "string" && Object.prototype.hasOwnProperty.call(모드지시, body.모드)) 모드 = body.모드;
   } catch { 입력 = ""; }
 
   // 모델을 부르기 전에 거르는 1차 멈춤. 한도도 아끼고, 멈춤이 눈에 보입니다.
@@ -79,7 +88,7 @@ export async function onRequestPost(context) {
   }
 
   const 메시지 = [
-    { role: "system", content: 지시문 },
+    { role: "system", content: 지시문 + "\n\n[선택한 작업]\n" + 모드지시[모드] + "\n제공되지 않은 개인 이력이나 실제 공고의 요건은 추측하지 말고 확인 필요라고 쓰세요." },
     { role: "user", content: 입력 },
   ];
 
