@@ -76,19 +76,21 @@ export async function onRequestPost(context) {
 
   let 입력 = "";
   let 모드 = "interview";
+  let 언어 = "ko";
   try {
     const body = await request.json();
     입력 = (body && typeof body.입력 === "string") ? body.입력.trim() : "";
+    언어 = body?.언어 === "zh" ? "zh" : "ko";
     if (typeof body?.모드 === "string" && Object.prototype.hasOwnProperty.call(모드지시, body.모드)) 모드 = body.모드;
   } catch { 입력 = ""; }
 
   // 모델을 부르기 전에 거르는 1차 멈춤. 한도도 아끼고, 멈춤이 눈에 보입니다.
   if (입력.length < 5) {
-    return Response.json({ 상태: "물음", 내용: "무엇을 도와드릴지 한 줄만 적어 주세요." });
+    return Response.json({ 상태: "물음", 내용: 언어 === "zh" ? "请简要说明你的职业目标或目前的问题。" : "진로 목표나 궁금한 점을 한 줄만 적어 주세요." });
   }
 
   const 메시지 = [
-    { role: "system", content: 지시문 + "\n\n[선택한 작업]\n" + 모드지시[모드] + "\n제공되지 않은 개인 이력이나 실제 공고의 요건은 추측하지 말고 확인 필요라고 쓰세요." },
+    { role: "system", content: 지시문 + "\n\n[선택한 작업]\n" + 모드지시[모드] + "\n제공되지 않은 개인 이력이나 실제 공고의 요건은 추측하지 말고 확인 필요라고 쓰세요.\n" + (언어 === "zh" ? "최종 text 내용은 반드시 자연스러운 중국어 간체로 작성하세요. 한국어로 답하지 마세요." : "최종 text 내용은 반드시 자연스러운 한국어로 작성하세요.") },
     { role: "user", content: 입력 },
   ];
 
@@ -96,7 +98,7 @@ export async function onRequestPost(context) {
   try {
     결과 = await env.AI.run(모델, {
       messages: 메시지,
-      max_tokens: 700,
+      max_tokens: 1200,
       response_format: { type: "json_schema", json_schema: 스키마 },
     });
   } catch {
@@ -105,7 +107,7 @@ export async function onRequestPost(context) {
       결과 = await env.AI.run(모델, { messages: 메시지, max_tokens: 700 });
     } catch {
       return Response.json(
-        { 상태: "오류", 내용: "지금은 답할 수 없습니다. 하루 사용 한도를 넘었거나 모델 이름이 틀렸을 수 있습니다." },
+        { 상태: "오류", 내용: 언어 === "zh" ? "目前无法生成回答，请检查模型配置或使用额度。" : "지금은 답할 수 없습니다. 하루 사용 한도를 넘었거나 모델 이름이 틀렸을 수 있습니다." },
         { status: 503 },
       );
     }
@@ -119,7 +121,7 @@ export async function onRequestPost(context) {
     본문.상태 = (구조.status === "ask") ? "물음" : "답";
     본문.내용 = 글로(구조.text).trim();
   }
-  if (!본문.내용) 본문.내용 = 글로(원시).trim() || "답을 만들지 못했습니다.";
+  if (!본문.내용) 본문.내용 = 글로(원시).trim() || (언어 === "zh" ? "暂时无法生成回答。" : "답을 만들지 못했습니다.");
   if (디버그) 본문._원문 = (typeof 원시 === "string" ? 원시 : JSON.stringify(원시)).slice(0, 600);
   return Response.json(본문);
 }
