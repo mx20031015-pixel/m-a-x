@@ -32,6 +32,11 @@
     cursor:pointer;
   }
   button:disabled{opacity:.45; cursor:default}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:20px}
+.mode{margin:0;padding:13px;background:var(--panel);border:1px solid var(--line);font-size:14px;text-align:left}
+.mode.active{border-color:#7293ff;background:#182850}
+.mode small{display:block;color:#b1b6c3;font-size:12px;font-weight:400;margin-top:5px}
+.hint{color:var(--dim);font-size:13px;line-height:1.7;margin:0 0 18px}
   #out{margin-top:40px}
   .card{border-top:3px solid var(--line); padding-top:22px}
   .card .tag{font-size:13px; font-weight:700; letter-spacing:2px; color:var(--dim); margin-bottom:12px}
@@ -49,7 +54,16 @@
   <h1 id="title">준비 중</h1>
   <p class="desc" id="desc"></p>
 
-  <label for="q">무엇이 필요한가요</label>
+  <label>진로 준비 도구 선택</label>
+  <div class="modes" aria-label="진로 준비 도구">
+    <button class="mode active" type="button" data-mode="career" aria-pressed="true">진로 방향 비교<small>희망 직업과 대안 비교</small></button>
+    <button class="mode" type="button" data-mode="skills" aria-pressed="false">역량·자격 점검<small>부족한 역량과 확인할 조건</small></button>
+    <button class="mode" type="button" data-mode="study" aria-pressed="false">학습 계획<small>TOPIK·IELTS·실무 공부</small></button>
+    <button class="mode" type="button" data-mode="job" aria-pressed="false">한국 취업 준비<small>인턴십과 채용 준비 순서</small></button>
+    <button class="mode" type="button" data-mode="interview" aria-pressed="false">인터뷰 도우미<small>기존 인터뷰·기록 정리 기능</small></button>
+  </div>
+  <p class="hint" id="modeHint">관심 직업과 고민을 적어 주세요. 확인되지 않은 조건은 별도로 표시합니다.</p>
+  <label for="q">현재 상황과 질문</label>
   <textarea id="q" placeholder=""></textarea>
   <button id="go">물어보기</button>
 
@@ -63,6 +77,26 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
+let currentMode = "career";
+const modeHints = {
+  career:"희망 직업과 대안 진로를 적어 주세요.",
+  skills:"관심 직무와 현재 익힌 기술을 적어 주세요.",
+  study:"현재 TOPIK·IELTS 수준, 목표, 공부할 수 있는 시간을 적어 주세요.",
+  job:"한국에서 희망하는 직무와 현재 준비 상황을 적어 주세요.",
+  interview:"인터뷰 주제, 목적이나 실제 기록을 적어 주세요."
+};
+document.querySelectorAll("[data-mode]").forEach(button => {
+  button.addEventListener("click", () => {
+    currentMode = button.dataset.mode;
+    document.querySelectorAll("[data-mode]").forEach(b => {
+      const active = b === button;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-pressed", String(active));
+    });
+    $("modeHint").textContent = modeHints[currentMode];
+    $("q").placeholder = modeHints[currentMode];
+  });
+});
 
 fetch("/api/meta").then(r => r.json()).then(m => {
   $("title").textContent = m.제목 || "남을 위한 AI";
@@ -90,10 +124,10 @@ async function 물어보기() {
     const r = await fetch("/api/ask", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ 입력 }),
+      body: JSON.stringify({ 입력, 모드: currentMode }),
     });
     const d = await r.json();
-    보여주기(d.상태 || "답", d.내용 || "답을 받지 못했습니다.");
+    보여주기(d.상태 || (r.ok ? "답" : "오류"), d.내용 || "답을 받지 못했습니다.");
   } catch {
     보여주기("오류", "연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요.");
   } finally {
